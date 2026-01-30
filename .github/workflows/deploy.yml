@@ -2,7 +2,7 @@ name: Deploy benefitscounseling.org
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -33,37 +33,29 @@ jobs:
           #!/usr/bin/env bash
           set -euo pipefail
 
-          echo "Deploying benefitscounseling..."
           cd "$DO_PATH"
-
-          # Make sure we're on main and up to date
           git fetch origin main
           git checkout main
           git pull origin main
 
-          # Install deps + build
-          # Use npm ci when lockfile is good; fallback to npm install if needed.
-          if npm ci; then
-            echo "npm ci succeeded"
-          else
-            echo "npm ci failed; falling back to npm install"
-            npm install
-          fi
-
+          npm ci
           npm run build
 
-          # Reload nginx to pick up any config changes (safe even if unchanged)
           sudo nginx -t
           sudo systemctl reload nginx
-
-          echo "Done."
           EOF
 
           chmod +x deploy.sh
           scp deploy.sh ${DO_USER}@${DO_HOST}:/tmp/benefits_deploy.sh
           ssh ${DO_USER}@${DO_HOST} "DO_PATH='${DO_PATH}' bash /tmp/benefits_deploy.sh"
-      
-      - name: Health check
-        if: ${{ secrets.DO_URL != '' }}
+
+      - name: Health check (optional)
+        env:
+          DO_URL: ${{ secrets.DO_URL }}
         run: |
-          curl -fsS ${{ secrets.DO_URL }} >/dev/null
+          if [ -n "${DO_URL}" ]; then
+            curl -fsS "${DO_URL}" >/dev/null
+            echo "Health check OK: ${DO_URL}"
+          else
+            echo "DO_URL not set; skipping health check"
+          fi
