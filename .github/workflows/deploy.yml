@@ -1,0 +1,69 @@
+name: Deploy benefitscounseling.org
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+
+      - name: Add host key
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.DO_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy on droplet
+        env:
+          DO_HOST: ${{ secrets.DO_HOST }}
+          DO_USER: ${{ secrets.DO_USER }}
+          DO_PATH: ${{ secrets.DO_PATH }}
+        run: |
+          cat > deploy.sh << 'EOF'
+          #!/usr/bin/env bash
+          set -euo pipefail
+
+          echo "Deploying benefitscounseling..."
+          cd "$DO_PATH"
+
+          # Make sure we're on main and up to date
+          git fetch origin main
+          git checkout main
+          git pull origin main
+
+          # Install deps + build
+          # Use npm ci when lockfile is good; fallback to npm install if needed.
+          if npm ci; then
+            echo "npm ci succeeded"
+          else
+            echo "npm ci failed; falling back to npm install"
+            npm install
+          fi
+
+          npm run build
+
+          # Reload nginx to pick up any config changes (safe even if unchanged)
+          sudo nginx -t
+          sudo systemctl reload nginx
+
+          echo "Done."
+          EOF
+
+          chmod +x deploy.sh
+          scp deploy.sh ${DO_USER}@${DO_HOST}:/tmp/benefits_deploy.sh
+          ssh ${DO_USER}@${DO_HOST} "DO_PATH='${DO_PATH}' bash /tmp/benefits_deploy.sh"
+      
+      - name: Health check
+        if: ${{ secrets.DO_URL != '' }}
+        run: |
+          curl -fsS ${{ secrets.DO_URL }} >/dev/null
