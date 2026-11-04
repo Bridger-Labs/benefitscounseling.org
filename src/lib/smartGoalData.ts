@@ -74,7 +74,7 @@ export function evaluateGoal(row: SmartGoalRow): SmartGoalRow['evaluation'] {
   }
 
   switch (row.id) {
-    case 'specific':
+    case 'specific': {
       // Check for specificity indicators
       const specificIndicators = ['want to', 'will', 'goal is', 'plan to', 'aim to', 'intend to'];
       const hasAction = specificIndicators.some(ind => input.toLowerCase().includes(ind));
@@ -88,7 +88,9 @@ export function evaluateGoal(row: SmartGoalRow): SmartGoalRow['evaluation'] {
         feedback: 'Try to be more specific. What exactly do you want to accomplish? Include who, what, where, when.' 
       };
 
-    case 'measurable':
+    }
+
+    case 'measurable': {
       // Check for numbers, percentages, or tracking language
       const hasNumbers = /\d+/.test(input);
       const measureWords = ['track', 'measure', 'count', 'per week', 'per day', 'per month', 'times', 'applications', 'percent', '%'];
@@ -102,7 +104,9 @@ export function evaluateGoal(row: SmartGoalRow): SmartGoalRow['evaluation'] {
         feedback: 'Add specific numbers or metrics. How many? How often? How will you track this?' 
       };
 
-    case 'achievable':
+    }
+
+    case 'achievable': {
       // Check for capability/resource language
       const achieveWords = ['have', 'can', 'able', 'experience', 'skill', 'know', 'available', 'access', 'capable', 'qualified'];
       const hasCapability = achieveWords.some(word => input.toLowerCase().includes(word));
@@ -115,7 +119,9 @@ export function evaluateGoal(row: SmartGoalRow): SmartGoalRow['evaluation'] {
         feedback: 'Explain what resources, skills, or support you have to achieve this goal.' 
       };
 
-    case 'realistic':
+    }
+
+    case 'realistic': {
       // Check for alignment/relevance language
       const realisticWords = ['fits', 'aligns', 'help', 'support', 'lead to', 'because', 'important', 'relevant', 'builds', 'contributes'];
       const hasAlignment = realisticWords.some(word => input.toLowerCase().includes(word));
@@ -128,7 +134,9 @@ export function evaluateGoal(row: SmartGoalRow): SmartGoalRow['evaluation'] {
         feedback: 'Explain how this goal fits your situation and why it matters to you.' 
       };
 
-    case 'timely':
+    }
+
+    case 'timely': {
       // Check for time-related language
       const timeWords = ['day', 'week', 'month', 'year', 'by', 'within', 'before', 'deadline', 'date', 'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
       const hasTime = timeWords.some(word => input.toLowerCase().includes(word)) || /\d+/.test(input);
@@ -140,6 +148,8 @@ export function evaluateGoal(row: SmartGoalRow): SmartGoalRow['evaluation'] {
         status: 'needs-improvement', 
         feedback: 'Add a specific deadline or timeframe. When do you want to achieve this?' 
       };
+
+    }
 
     default:
       return { status: 'pending', feedback: '' };

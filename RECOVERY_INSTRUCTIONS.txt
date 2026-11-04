@@ -1,0 +1,22 @@
+BenefitsCounseling.org source recovery
+=====================================
+
+Contains the complete src/components/ui and src/lib contents from the
+Vercel toolkit, with the previous lint corrections applied to
+command.tsx, textarea.tsx, and smartGoalData.ts.
+
+DO NOT replace entire folders in Finder with the extracted ones.
+Instead, from the root of your repository, run:
+
+    unzip -o /path/to/BenefitsCounseling_Source_Recovery.zip -d .
+
+This restores/updates individual files and leaves all other files in place.
+If this repository has local edits in those directories, review them or
+commit a backup first. This archive does not change package.json,
+package-lock.json, Vite configuration, or other source folders.
+
+Next:
+    npm run build
+    npm run test
+    npm run lint
+

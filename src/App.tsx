@@ -1,27 +1,24 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
+import { Toaster } from '@/components/ui/toaster';
+import { Toaster as Sonner } from '@/components/ui/sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { SiteLayout } from '@/components/site/SiteLayout';
+import Dashboard from '@/pages/Dashboard';
+import { SsiCalculator } from '@/pages/tools/SsiCalculator';
+import { TimelineTracker } from '@/pages/tools/TimelineTracker';
+import { ScenarioPlanner } from '@/pages/tools/ScenarioPlanner';
+import { BenefitsReport } from '@/pages/tools/BenefitsReport';
+import { Resources } from '@/pages/Resources';
+import { SmartGoalsWorksheet } from '@/components/SmartGoalsWorksheet';
+import NotFound from '@/pages/NotFound';
 
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
-
-export default App;
+export default function App() { return <TooltipProvider><Toaster/><Sonner/><BrowserRouter><Routes><Route element={<SiteLayout/>}>
+  <Route path="/" element={<Dashboard/>}/>
+  <Route path="/tools/ssi" element={<SsiCalculator/>}/>
+  <Route path="/tools/twp-epe" element={<TimelineTracker/>}/>
+  <Route path="/tools/scenarios" element={<ScenarioPlanner/>}/>
+  <Route path="/tools/report" element={<BenefitsReport/>}/>
+  <Route path="/tools/smart-goals" element={<SmartGoalsWorksheet/>}/>
+  <Route path="/learn" element={<Resources/>}/>
+  <Route path="*" element={<NotFound/>}/>
+</Route></Routes></BrowserRouter></TooltipProvider> }
