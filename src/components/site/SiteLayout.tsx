@@ -1,16 +1,23 @@
-import { createContext, useContext, useState } from 'react';
+import { useState } from 'react';
 import { Outlet, Link, NavLink } from 'react-router-dom';
-import { ArrowUpRight, BarChart3, BookOpen, Calculator, ChevronDown, ClipboardList, Compass, FileText, HeartHandshake, Menu, ShieldCheck, Target, X } from 'lucide-react';
+import { ArrowUpRight, BarChart3, BookOpen, Calculator, ChevronDown, ClipboardList, Compass, FileText, HeartHandshake, Menu, MessageCircleMore, ShieldCheck, Target, X } from 'lucide-react';
 import type { RulesYear } from '@/lib/benefits';
+import { RulesContext } from '@/contexts/rules';
 import { cn } from '@/lib/utils';
 
-const RulesContext = createContext<{year: RulesYear; setYear: (y: RulesYear)=>void}>({year: 2026, setYear:()=>{}});
-export const useRules = () => useContext(RulesContext);
 
 const navGroups = [
   { title: 'WORKSPACE', links: [{to:'/',name:'Overview',icon:Compass},{to:'/tools/scenarios',name:'Work scenarios',icon:BarChart3},{to:'/tools/report',name:'Benefits report',icon:FileText}]},
-  { title: 'CALCULATORS & TOOLS', links: [{to:'/tools/ssi',name:'SSI calculator',icon:Calculator},{to:'/tools/twp-epe',name:'TWP / EPE tracker',icon:ClipboardList},{to:'/tools/smart-goals',name:'SMART goals',icon:Target}]},
-  { title: 'GUIDANCE', links: [{to:'/learn',name:'Rules & resources',icon:BookOpen}]},
+  { title: 'CALCULATORS & TOOLS', links: [{to:'/tools/ssi',name:'SSI calculator',icon:Calculator},{to:'/tools/twp-epe',name:'TWP / EPE tracker',icon:ClipboardList},{to:'/tools/work-supports',name:'IRWE & work supports',icon:MessageCircleMore},{to:'/tools/smart-goals',name:'SMART goals',icon:Target}]},
+  { title: 'GUIDANCE', links: [
+    {to:'/learn',name:'All NJ guides',icon:BookOpen},
+    {to:'/learn/benefit-types',name:'SSI vs SSDI / CDB',icon:BookOpen},
+    {to:'/learn/reporting',name:'Report income',icon:BookOpen},
+    {to:'/learn/overpayments',name:'Overpayments & waivers',icon:BookOpen},
+    {to:'/learn/work-incentives',name:'Work incentives',icon:BookOpen},
+    {to:'/learn/nj-medicaid',name:'NJ Medicaid',icon:BookOpen},
+    {to:'/learn/quick-reference',name:'Quick reference',icon:BookOpen},
+  ]},
 ];
 
 export function SiteLayout() {
@@ -20,7 +27,7 @@ export function SiteLayout() {
     <div className="flex items-center justify-between px-6 pt-8 pb-9">
       <Link to="/" onClick={()=>setMobileOpen(false)} className="flex items-center gap-3 text-white">
         <div className="flex h-10 w-10 items-center justify-center rounded-[13px] bg-[#c8f7db] text-[#103d35] shadow-sm"><HeartHandshake size={23} strokeWidth={2.2}/></div>
-        <div className="leading-tight"><div className="font-display text-[19px] font-bold tracking-tight">Benefits<span className="text-[#b7ebce]">Counseling</span></div><div className="text-[11px] font-semibold tracking-[0.14em] text-slate-400">.ORG • WORK INCENTIVES</div></div>
+        <div className="leading-tight"><div className="font-display text-[19px] font-bold tracking-tight">Benefits<span className="text-[#b7ebce]">Counseling</span></div><div className="text-[11px] font-semibold tracking-[0.14em] text-slate-400">.ORG • NEW JERSEY</div></div>
       </Link>
       <button className="lg:hidden rounded-lg p-2 text-slate-300 hover:bg-white/10" onClick={()=>setMobileOpen(false)} aria-label="Close navigation"><X size={20}/></button>
     </div>

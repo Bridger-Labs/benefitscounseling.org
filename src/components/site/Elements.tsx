@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { Info, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -14,10 +15,24 @@ export function Field({label, help, children, className}: {label: string; help?:
   return <label className={cn('block', className)}><span className="field-label">{label}</span>{children}{help && <span className="field-help">{help}</span>}</label>;
 }
 export function NumberInput({value, onChange, min=0, max, step='any', prefix, suffix, id}: {value: number; onChange: (v: number) => void; min?: number; max?: number; step?: number | 'any'; prefix?: string; suffix?: string; id?: string}) {
+  // Keep the text being typed while focused so decimal values like "17.50" aren't
+  // prematurely reformatted when the parent receives a numeric update.
+  const [focused, setFocused] = useState(false);
+  const [draft, setDraft] = useState('');
+  const display = focused ? draft : (Number.isFinite(value) && value !== 0 ? String(value) : '');
   return <span className="relative block">
     {prefix && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">{prefix}</span>}
     <input id={id} type="number" inputMode="decimal" min={min} max={max} step={step} className={cn('field-input',prefix && 'pl-7',suffix && 'pr-14')}
-      value={Number.isFinite(value) ? value : 0} onChange={e => onChange(Math.max(min, Math.min(max ?? Number.MAX_SAFE_INTEGER, Number(e.target.value) || 0)))} />
+      value={display} placeholder={focused ? '' : '0'}
+      onFocus={() => { setDraft(Number.isFinite(value) && value !== 0 ? String(value) : ''); setFocused(true); }}
+      onBlur={() => setFocused(false)}
+      onChange={event => {
+        const raw = event.currentTarget.value;
+        setDraft(raw);
+        if (raw.trim() === '') { onChange(0); return; }
+        const parsed = Number(raw);
+        if (Number.isFinite(parsed)) onChange(Math.max(min, Math.min(max ?? Number.MAX_SAFE_INTEGER, parsed)));
+      }} />
     {suffix && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">{suffix}</span>}
   </span>;
 }

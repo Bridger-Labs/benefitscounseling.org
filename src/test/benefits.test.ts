@@ -61,3 +61,30 @@ describe('SSDI work incentives', () => {
     expect(monthlyWages(20,15)).toBe(1300);
   });
 });
+
+describe('CDB / DAC and recurring wage entry', () => {
+  it('keeps CDB distinct from SSDI while identifying SSI + CDB as concurrent', async () => {
+    const { benefitsTypeLabel, includesSsi, titleIiType } = await import('../lib/benefits');
+    expect(benefitsTypeLabel('cdb')).toContain('CDB');
+    expect(titleIiType('ssi-cdb')).toBe('cdb');
+    expect(includesSsi('ssi-cdb')).toBe(true);
+    expect(includesSsi('cdb')).toBe(false);
+  });
+  it('fills recurring monthly wages and preserves manually overridden months', async () => {
+    const { applyRecurringWages, makeMonthList } = await import('../lib/benefits');
+    const base = applyRecurringWages(makeMonthList('2022-01', 3), 1500);
+    expect(base.map(m => m.earnings)).toEqual([1500, 1500, 1500]);
+    const withOverride = [{...base[0]}, {...base[1], earnings:800, wageOverride:true}, {...base[2]}];
+    const updated = applyRecurringWages(withOverride, 1800);
+    expect(updated.map(m=>m.earnings)).toEqual([1800, 800, 1800]);
+    expect(updated[1].wageOverride).toBe(true);
+    expect(applyRecurringWages(withOverride, 2000, true).map(m => m.earnings)).toEqual([2000, 2000, 2000]);
+  });
+  it('uses the historic 2022 threshold even when a recurring wage is entered', async () => {
+    const { applyRecurringWages, evaluateWorkTimeline, makeMonthList } = await import('../lib/benefits');
+    const months = applyRecurringWages(makeMonthList('2022-01',3),1000);
+    const result = evaluateWorkTimeline(months);
+    expect(result.rows.map(m=>m.limit)).toEqual([970,970,970]);
+    expect(result.rows.map(m=>m.isTrialMonth)).toEqual([true,true,true]);
+  });
+});

@@ -1,6 +1,12 @@
 /** Educational, individual-only estimates. See SOURCES and model limitations. */
 export type RulesYear = 2026 | 2027;
-export type BenefitsType = 'ssi' | 'ssdi' | 'both';
+/** Title II benefit categories are distinct even though TWP/EPE rules overlap. */
+export type BenefitsType = 'ssi' | 'ssdi' | 'both' | 'cdb' | 'ssi-cdb';
+export type TitleIiType = 'ssdi' | 'cdb';
+export const includesSsi = (type: BenefitsType) => type === 'ssi' || type === 'both' || type === 'ssi-cdb';
+export const titleIiType = (type: BenefitsType): TitleIiType | null => type === 'ssdi' || type === 'both' ? 'ssdi' : type === 'cdb' || type === 'ssi-cdb' ? 'cdb' : null;
+export const titleIiLabel = (type: TitleIiType) => type === 'cdb' ? 'CDB (DAC)' : 'SSDI';
+export const benefitsTypeLabel = (type: BenefitsType) => ({ssi:'SSI only',ssdi:'SSDI only',both:'SSI + SSDI',cdb:'CDB (DAC) only','ssi-cdb':'SSI + CDB (DAC)'})[type];
 export type WorkPhase = 'twp' | 'epe' | 'post-epe' | 'unsure';
 export type WorkType = 'employee' | 'self-employed';
 
@@ -31,6 +37,9 @@ export const SOURCES = [
   {label: 'SSA: Trial Work Period historical thresholds', url: 'https://www.ssa.gov/OACT/cola/twp.html'},
   {label: 'SSA: SGA historical thresholds', url: 'https://www.ssa.gov/OACT/cola/sga.html'},
   {label: 'SSA: Extended Period of Eligibility', url: 'https://www.ssa.gov/redbook/eng/epe.htm'},
+  {label: 'SSA: Childhood Disability Benefits (CDB / DAC)', url: 'https://secure.ssa.gov/poms.nsf/lnx/0300203080'},
+  {label: 'SSA: Trial Work Period includes CDB', url: 'https://www.ssa.gov/OP_Home/handbook/handbook.05/handbook-0520.html'},
+  {label: 'SSA: Special Medicaid group for CDB/DAC', url: 'https://secure.ssa.gov/poms.nsf/lnx/0501715015'},
   {label: 'SSA: IRWE deduction order', url: 'https://secure.ssa.gov/poms.nsf/lnx/0500820540'},
   {label: 'SSA: Section 1619(b) and Medicaid', url: 'https://www.ssa.gov/ssi/spotlights/spot-medicaid.htm'},
 ] as const;
@@ -72,7 +81,12 @@ export function calculateSsi({grossWages, unearnedIncome, irwe, year}: SsiInputs
   };
 }
 
-export interface WorkMonth { id: string; month: string; earnings: number; hours?: number }
+export interface WorkMonth { id: string; month: string; earnings: number; hours?: number; wageOverride?: boolean }
+/** Use a recurring baseline while preserving months the user has changed individually. */
+export function applyRecurringWages(months: WorkMonth[], grossMonthly: number, replaceOverrides = false): WorkMonth[] {
+  const earnings = nonnegative(grossMonthly);
+  return months.map(month => month.wageOverride && !replaceOverrides ? month : {...month, earnings, wageOverride: false});
+}
 export interface TimelineMonth extends WorkMonth {
   limit: number; sga: number; isTrialMonth: boolean; twpCount: number;
   phase: 'TWP' | 'EPE' | 'After EPE'; epeMonth: number | null;
@@ -118,16 +132,16 @@ export function evaluateWorkTimeline(months: WorkMonth[], blind = false, type: W
 }
 
 export type SsdiAssessment = { status: 'generally-payable' | 'review' | 'not-applicable'; message: string; potentialMin: number; potentialMax: number };
-export function assessSsdi(monthlyGross: number, monthlySsdi: number, phase: WorkPhase, blind: boolean, year: RulesYear): SsdiAssessment {
+export function assessSsdi(monthlyGross: number, monthlySsdi: number, phase: WorkPhase, blind: boolean, year: RulesYear, titleIi: 'SSDI' | 'CDB' = 'SSDI'): SsdiAssessment {
   const benefit = nonnegative(monthlySsdi);
   const rules = ANNUAL_RULES[year];
-  if (!benefit) return {status: 'not-applicable', message: 'No SSDI benefit amount entered.', potentialMin: 0, potentialMax: 0};
-  if (phase === 'twp') return {status: 'generally-payable', message: 'In an available Trial Work Period month, SSDI usually continues regardless of earnings, assuming other eligibility rules are met.', potentialMin: benefit, potentialMax: benefit};
-  if (phase === 'unsure') return {status: 'review', message: 'Confirm the TWP/EPE status before estimating SSDI cash payments.', potentialMin: 0, potentialMax: benefit};
+  if (!benefit) return {status: 'not-applicable', message: `No ${titleIi} benefit amount entered.`, potentialMin: 0, potentialMax: 0};
+  if (phase === 'twp') return {status: 'generally-payable', message: `In an available Trial Work Period month, ${titleIi} usually continues regardless of earnings, assuming other eligibility rules are met.`, potentialMin: benefit, potentialMax: benefit};
+  if (phase === 'unsure') return {status: 'review', message: `Confirm the TWP/EPE status before estimating ${titleIi} cash payments.`, potentialMin: 0, potentialMax: benefit};
   const sga = blind ? rules.blindSga : rules.sga;
-  if (monthlyGross >= sga) return {status: 'review', message: 'At or above the SGA guide. SSDI may stop or be suspended, but grace months, IRWE, subsidies, and SSA determinations can change the outcome.', potentialMin: 0, potentialMax: benefit};
+  if (monthlyGross >= sga) return {status: 'review', message: `At or above the SGA guide. ${titleIi} may stop or be suspended, but grace months, IRWE, subsidies, and SSA determinations can change the outcome.`, potentialMin: 0, potentialMax: benefit};
   if (phase === 'post-epe') return {status: 'review', message: 'Below the SGA guide; post-EPE eligibility still depends on your SSA record and any prior cessation.', potentialMin: 0, potentialMax: benefit};
-  return {status: 'generally-payable', message: 'Below the SGA guide during the EPE; SSDI is generally payable if you remain otherwise eligible.', potentialMin: benefit, potentialMax: benefit};
+  return {status: 'generally-payable', message: `Below the SGA guide during the EPE; ${titleIi} is generally payable if you remain otherwise eligible.`, potentialMin: benefit, potentialMax: benefit};
 }
 
 export function makeMonthList(start: string, count: number): WorkMonth[] {
